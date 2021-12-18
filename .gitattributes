@@ -1,1 +1,1 @@
-/data/yolov4-cell_best.weights filter=lfs diff=lfs merge=lfs -text
+./data/yolov4-cell_best.weights filter=lfs diff=lfs merge=lfs -text
