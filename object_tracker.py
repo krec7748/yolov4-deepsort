@@ -1,5 +1,6 @@
 import os
-
+import math
+import sys
 from tensorflow.python.ops.gen_array_ops import check_numerics
 # comment out below line to enable tensorflow logging outputs
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -252,6 +253,37 @@ def main(_argv):
             out.write(result)
         if cv2.waitKey(1) & 0xFF == ord('q'): break
     cv2.destroyAllWindows()
+    
+    #save_um_result
+    pixel_per_um = 1.5385 #Can confirm with imageJ
+    
+    class Point2D:
+        def __init__(self, x, y):
+            self.x = x
+            self.y = y
+    
+    pixel_result_dict = {}
+    for track_id in center_points_dict.keys():
+        pixel_result_dict[f"Cell-{track_id}"] = []
+        i = 0
+        while i < len(center_points_dict[track_id]) - 1:
+            center_point_list = center_points_dict[track_id]
+            p1 = Point2D(x = center_point_list[i][0], y = center_point_list[i][1])
+            p2 = Point2D(x = center_point_list[i+1][0], y = center_point_list[i+1][1])
+            a = p2.x - p1.x #distance x-coordinate
+            b = p2.y - p1.y #distance y-coordinate
+            distance = math.sqrt((a*a) + (b*b))
+            pixel_result_dict[f"Cell-{track_id}"].append(distance)
+            i += 1
+            
+    um_sum_result = {}
+    for track_id, value in pixel_result_dict.items():
+        um_sum_result[track_id] = round(sum(value) * (1 / pixel_per_um), 2) #Conversion of unit: pixel * (um / pixel) = um
+    
+    f = open("tracking_result.txt", "w") #save
+    for idx, value in um_sum_result.items():
+        print(idx, value, file = f)
+    f.close()
 
 if __name__ == '__main__':
     try:
