@@ -1,4 +1,6 @@
 import os
+
+from tensorflow.python.ops.gen_array_ops import check_numerics
 # comment out below line to enable tensorflow logging outputs
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import time
@@ -91,6 +93,10 @@ def main(_argv):
         out = cv2.VideoWriter(FLAGS.output, codec, fps, (width, height))
 
     frame_num = 0
+    
+    center_points_dict = {}
+    center_points_list = []
+    
     # while video is running
     while True:
         return_value, frame = vid.read()
@@ -212,12 +218,25 @@ def main(_argv):
             color = [i * 255 for i in color]
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1]-30)), (int(bbox[0])+(len(class_name)+len(str(track.track_id)))*17, int(bbox[1])), color, -1)
-            cv2.circle(frame, (int((int(bbox[0]) + int(bbox[2])) / 2), int((int(bbox[1]) + int(bbox[3])) / 2)), 5, color, -1)
             cv2.putText(frame, class_name + "-" + str(track.track_id),(int(bbox[0]), int(bbox[1]-10)),0, 0.75, (255,255,255),2)
+
+            cx = int((int(bbox[0]) + int(bbox[2])) / 2)
+            cy = int((int(bbox[1]) + int(bbox[3])) / 2)
+            cv2.circle(frame, (cx, cy), 3, color, -1)
+            center_points_list.append((cx, cy))
+            
+            if int(track.track_id) not in center_points_dict.keys():
+                center_points_dict[int(track.track_id)] = [(cx, cy)]
+            else:
+                center_points_dict[int(track.track_id)].append((cx, cy))
 
         # if enable info flag then print details about each track
             if FLAGS.info:
                 print("Tracker ID: {}, Class: {},  BBox Coords (xmin, ymin, xmax, ymax): {}".format(str(track.track_id), class_name, (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))))
+                
+        # center point tracking
+        for center_point in center_points_list:
+            cv2.circle(frame, center_point, 3, (255, 255, 255), -1)
 
         # calculate frames per second of running detections
         fps = 1.0 / (time.time() - start_time)
