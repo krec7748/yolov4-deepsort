@@ -94,9 +94,7 @@ def main(_argv):
         out = cv2.VideoWriter(FLAGS.output, codec, fps, (width, height))
 
     frame_num = 0
-    
     center_points_dict = {}
-    center_points_list = []
     
     # while video is running
     while True:
@@ -223,8 +221,7 @@ def main(_argv):
 
             cx = int((int(bbox[0]) + int(bbox[2])) / 2)
             cy = int((int(bbox[1]) + int(bbox[3])) / 2)
-            cv2.circle(frame, (cx, cy), 3, color, -1)
-            center_points_list.append((cx, cy))
+            #cv2.circle(frame, (cx, cy), 3, color, -1)
             
             if int(track.track_id) not in center_points_dict.keys():
                 center_points_dict[int(track.track_id)] = [(cx, cy)]
@@ -236,8 +233,13 @@ def main(_argv):
                 print("Tracker ID: {}, Class: {},  BBox Coords (xmin, ymin, xmax, ymax): {}".format(str(track.track_id), class_name, (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))))
                 
         # center point tracking
-        for center_point in center_points_list:
-            cv2.circle(frame, center_point, 3, (255, 255, 255), -1)
+        for i, center_point_list in enumerate(center_points_dict.values()):
+            color = colors[(i+1) % len(colors)]
+            color = [i * 255 for i in color]
+            prev_cp = center_point_list[0]
+            for curr_cp in center_point_list[1:]:
+                cv2.line(frame, prev_cp, curr_cp, color, 3)
+                prev_cp = curr_cp
 
         # calculate frames per second of running detections
         fps = 1.0 / (time.time() - start_time)
@@ -255,7 +257,7 @@ def main(_argv):
     cv2.destroyAllWindows()
     
     #save_um_result
-    pixel_per_um = 1.5385 #Can confirm with imageJ
+    pixel_per_um = 1.5385 #Change the value depending pixel per length
     
     class Point2D:
         def __init__(self, x, y):
